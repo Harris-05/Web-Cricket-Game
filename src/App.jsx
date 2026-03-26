@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 
-// 1. Define Probabilities [cite: 41, 42]
 const PROBABILITIES = {
   Aggressive: [
     { outcome: "Wicket", prob: 0.40, color: "red" },      
@@ -32,17 +31,14 @@ function App() {
   const [gameOver, setGameOver] = useState(false);
   const [lastAction, setLastAction] = useState("");
   
-  // Animation & Visual States [cite: 48, 49, 98]
-  const [animState, setAnimState] = useState("IDLE"); // IDLE, BOWLING, HITTING
+  const [animState, setAnimState] = useState("IDLE");
   const [currentOutcome, setCurrentOutcome] = useState(null);
   const [bigText, setBigText] = useState("");
 
   const sliderDirection = useRef(1); 
   const playButtonRef = useRef(null); 
 
-  // Moving Slider Logic [cite: 45]
   useEffect(() => {
-    // PAUSE CONDITION: Stop the slider if the game is over or an animation is playing
     if (gameOver || animState !== "IDLE") return;
 
     const interval = setInterval(() => {
@@ -62,7 +58,6 @@ function App() {
     return () => clearInterval(interval);
   }, [gameOver, animState]); 
 
-  // Spacebar Event Listener
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.code === "Space") {
@@ -77,7 +72,6 @@ function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [gameOver, animState]);
 
-  // Play Shot Logic
   const playShot = () => {
     if (gameOver || animState !== "IDLE") return;
 
@@ -85,7 +79,6 @@ function App() {
     let cumulativeProb = 0;
     let result = "";
 
-    // Determine outcome based strictly on slider position [cite: 46, 47]
     for (let segment of currentProbs) {
       cumulativeProb += segment.prob;
       if (sliderPos <= cumulativeProb) {
@@ -97,16 +90,13 @@ function App() {
     setCurrentOutcome(result);
     setAnimState("BOWLING"); 
 
-    // Phase 1: Ball reaches batsman
     setTimeout(() => {
       setAnimState("HITTING");
 
-      // Phase 2: Ball travels to final position, then show result
       setTimeout(() => {
         showBigTextOverlay(result);
         processOutcome(result);
         
-        // Phase 3: Reset for next ball
         setTimeout(() => {
           setBigText("");
           setAnimState("IDLE"); 
@@ -141,13 +131,13 @@ function App() {
     }
 
     if (newBalls >= 12 || newWickets >= 2) {
-      // Small delay to let the final animation finish before popping up the game over screen
+
       setTimeout(() => {
         setGameOver(true);
       }, 1500);
       setLastAction(`Game Over! Final Score: ${newRuns}/${newWickets}`);
     } else {
-      setLastAction(`Outcome: ${result}`);
+      setLastAction(`${result}`);
     }
   };
 
@@ -186,10 +176,8 @@ function App() {
   const wicketsFallen = animState === "HITTING" && currentOutcome === "Wicket";
 
   return (
-    // Added position relative to the main container
     <div className="container" style={{ position: "relative", fontFamily: "sans-serif", padding: "20px", maxWidth: "800px", margin: "0 auto", minHeight: "600px" }}>
       
-      {/* GAME OVER SCREEN OVERLAY  */}
       {gameOver && (
         <div style={{
           position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
