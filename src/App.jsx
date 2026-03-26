@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 
-
 const PROBABILITIES = {
   Aggressive: [
     { outcome: "Wicket", prob: 0.40, color: "red" },      
@@ -28,14 +27,13 @@ function App() {
   const [balls, setBalls] = useState(0);
   const [style, setStyle] = useState("Defensive");
   
-  
   const [sliderPos, setSliderPos] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [lastAction, setLastAction] = useState("");
   
   const sliderDirection = useRef(1); 
+  const playButtonRef = useRef(null); // <-- Added Ref for the button
 
-  
   useEffect(() => {
     if (gameOver) return;
 
@@ -54,6 +52,21 @@ function App() {
     }, 50); 
 
     return () => clearInterval(interval);
+  }, [gameOver]);
+
+  // Spacebar Event Listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.code === "Space") {
+        e.preventDefault(); 
+        if (playButtonRef.current && !gameOver) {
+          playButtonRef.current.click();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [gameOver]);
 
   // 3. Play Shot Logic [cite: 46, 78, 80]
@@ -121,7 +134,6 @@ function App() {
         <p>Style: {style}</p>
       </div>
 
-      {/* Temporary visual output for the slider to verify it works */}
       <div style={{ margin: "20px 0" }}>
         <p>Slider Position: {sliderPos.toFixed(2)}</p>
         <h3>{lastAction}</h3>
@@ -134,8 +146,8 @@ function App() {
         <button onClick={() => setStyle("Defensive")} disabled={gameOver}>
           Defensive
         </button>
-        <button onClick={playShot} disabled={gameOver}>
-          Play Shot
+        <button ref={playButtonRef} onClick={playShot} disabled={gameOver}>
+          Play Shot (Spacebar)
         </button>
         <button onClick={handleRestart}>
           Restart
