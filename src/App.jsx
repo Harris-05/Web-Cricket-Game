@@ -32,9 +32,10 @@ function App() {
   const [gameOver, setGameOver] = useState(false);
   const [lastAction, setLastAction] = useState("");
   
-  // Animation States
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [isBatting, setIsBatting] = useState(false);
+  // Animation & Visual States [cite: 48, 49, 98]
+  const [animState, setAnimState] = useState("IDLE"); // IDLE, BOWLING, HITTING
+  const [currentOutcome, setCurrentOutcome] = useState(null);
+  const [bigText, setBigText] = useState("");
 
   const sliderDirection = useRef(1); 
   const playButtonRef = useRef(null); 
@@ -65,7 +66,7 @@ function App() {
     const handleKeyDown = (e) => {
       if (e.code === "Space") {
         e.preventDefault(); 
-        if (playButtonRef.current && !gameOver && !isAnimating) {
+        if (playButtonRef.current && !gameOver && animState === "IDLE") {
           playButtonRef.current.click();
         }
       }
@@ -73,12 +74,11 @@ function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [gameOver, isAnimating]);
+  }, [gameOver, animState]);
 
   // Play Shot Logic
   const playShot = () => {
-    if (gameOver || isAnimating) return;
-    setIsAnimating(true); // Start the bowling animation 
+    if (gameOver || animState !== "IDLE") return;
 
     const currentProbs = PROBABILITIES[style];
     let cumulativeProb = 0;
@@ -93,18 +93,35 @@ function App() {
       }
     }
 
-    // Trigger Batting Swing just before the ball reaches the batsman 
-    setTimeout(() => {
-      setIsBatting(true);
-    }, 400);
+    setCurrentOutcome(result);
+    setAnimState("BOWLING");
 
-    // End animation and process the result
+    // Phase 1: Ball reaches batsman
     setTimeout(() => {
-      setIsAnimating(false);
-      setIsBatting(false);
-      setLastAction(`Outcome: ${result}`);
-      processOutcome(result);
-    }, 700);
+      setAnimState("HITTING");
+
+      // Phase 2: Ball travels to final position, then show result
+      setTimeout(() => {
+        showBigTextOverlay(result);
+        processOutcome(result);
+        
+        // Phase 3: Reset for next ball
+        setTimeout(() => {
+          setBigText("");
+          setAnimState("IDLE");
+          setCurrentOutcome(null);
+        }, 1500);
+
+      }, 600); 
+    }, 400); 
+  };
+
+  const showBigTextOverlay = (result) => {
+    if (result === "Wicket") setBigText("OUT!");
+    else if (result === "0") setBigText("DOT BALL");
+    else if (result === "4") setBigText("FOUR!");
+    else if (result === "6") setBigText("SIX!");
+    else setBigText(`${result} RUNS`);
   };
 
   const processOutcome = (result) => {
@@ -126,6 +143,8 @@ function App() {
     if (newBalls >= 12 || newWickets >= 2) {
       setGameOver(true);
       setLastAction(`Game Over! Final Score: ${newRuns}/${newWickets}`);
+    } else {
+      setLastAction(`Outcome: ${result}`);
     }
   };
 
@@ -138,9 +157,34 @@ function App() {
     setGameOver(false);
     setLastAction("");
     setSliderPos(0);
-    setIsAnimating(false);
-    setIsBatting(false);
+    setAnimState("IDLE");
+    setCurrentOutcome(null);
+    setBigText("");
   };
+
+  // Dynamic Ball CSS based on animation state
+  let ballLeft = "85%";
+  let ballTop = "30px";
+  let ballScale = 1;
+  let ballOpacity = gameOver ? 0 : 1;
+
+  if (animState === "BOWLING") {
+    ballLeft = "15%"; // Travels to batsman
+  } else if (animState === "HITTING") {
+    switch(currentOutcome) {
+      case "0": ballLeft = "20%"; ballTop = "40px"; break;
+      case "1": ballLeft = "30%"; ballTop = "50px"; break;
+      case "2": ballLeft = "50%"; ballTop = "5px"; break; // Top middle
+      case "3": ballLeft = "50%"; ballTop = "60px"; break; // Bottom middle
+      case "4": ballLeft = "95%"; ballTop = "40px"; break; // Grounded to boundary
+      case "6": ballLeft = "95%"; ballTop = "-10px"; ballScale = 2; break; // Flying high
+      case "Wicket": ballLeft = "8%"; ballTop = "30px"; break; // Goes past bat into wickets
+      default: break;
+    }
+  }
+
+  // Wicket falling logic
+  const wicketsFallen = animState === "HITTING" && currentOutcome === "Wicket";
 
   return (
     <div className="container" style={{ fontFamily: "sans-serif", padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
@@ -154,12 +198,12 @@ function App() {
         <p><strong>Style:</strong> {style}</p>
       </div>
 
-      {/* 2D Cricket Ground Layout  */}
+      {/* 2D Cricket Ground Layout */}
       <div style={{ 
         width: "100%", 
         height: "250px", 
-        backgroundColor: "#4CAF50", // Grass Green
-        borderRadius: "100px / 50px", // Oval boundary look
+        backgroundColor: "#4CAF50", 
+        borderRadius: "100px / 50px", 
         position: "relative",
         border: "5px solid white",
         display: "flex",
@@ -167,48 +211,67 @@ function App() {
         justifyContent: "center",
         overflow: "hidden"
       }}>
+        
+        {/* BIG TEXT OVERLAY */}
+        {bigText && (
+          <div style={{
+            position: "absolute", zIndex: 20,
+            color: currentOutcome === "Wicket" ? "#ff4d4d" : "white",
+            fontSize: "60px", fontWeight: "900", fontStyle: "italic",
+            textShadow: "3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000",
+            animation: "popIn 0.3s ease-out"
+          }}>
+            {bigText}
+          </div>
+        )}
+
         {/* Pitch Area */}
         <div style={{
-          width: "70%",
-          height: "60px",
-          backgroundColor: "#d2b48c", // Pitch khaki/tan
-          border: "2px solid #8b4513",
-          position: "relative"
+          width: "70%", height: "80px", backgroundColor: "#d2b48c", 
+          border: "2px solid #8b4513", position: "relative"
         }}>
           {/* Crease lines */}
           <div style={{ position: "absolute", left: "15%", top: "0", bottom: "0", borderLeft: "2px solid white" }} />
           <div style={{ position: "absolute", right: "15%", top: "0", bottom: "0", borderRight: "2px solid white" }} />
 
-          {/* Batsman & Bat  */}
+          {/* Wickets */}
+          <div style={{
+            position: "absolute", left: "10%", top: "25px", height: "30px", width: "10px",
+            display: "flex", justifyContent: "space-between",
+            transform: wicketsFallen ? "rotate(-75deg) translate(-10px, -5px)" : "rotate(0deg)",
+            transformOrigin: "bottom center",
+            transition: "transform 0.2s ease-in", zIndex: 1
+          }}>
+            <div style={{ width: "2px", height: "100%", backgroundColor: "white" }}></div>
+            <div style={{ width: "2px", height: "100%", backgroundColor: "white" }}></div>
+            <div style={{ width: "2px", height: "100%", backgroundColor: "white" }}></div>
+          </div>
+
+          {/* Batsman & Bat */}
           <div style={{ 
-            position: "absolute", 
-            left: "5%", 
-            top: "5px", 
-            fontSize: "35px",
-            transform: isBatting ? "rotate(-60deg) translateX(-10px)" : "rotate(0deg)", // Batting Animation [cite: 49]
-            transition: "transform 0.15s ease-in-out",
-            zIndex: 2
+            position: "absolute", left: "11%", top: "15px", fontSize: "35px",
+            transform: (animState === "HITTING" && currentOutcome !== "Wicket") ? "rotate(-60deg) translateX(-10px)" : "rotate(0deg)",
+            transition: "transform 0.1s ease-in-out", zIndex: 2
           }}>
             🏏
           </div>
 
           {/* Bowler */}
-          <div style={{ position: "absolute", right: "5%", top: "10px", fontSize: "30px" }}>
+          <div style={{ position: "absolute", right: "5%", top: "20px", fontSize: "30px" }}>
             🧍‍♂️
           </div>
 
-          {/* Ball  */}
+          {/* Ball */}
           <div style={{
             position: "absolute",
-            top: "25px",
-            right: isAnimating ? "85%" : "15%", // Ball travels toward batsman [cite: 48]
-            width: "12px",
-            height: "12px",
-            backgroundColor: "white",
-            borderRadius: "50%",
-            boxShadow: "0 0 3px black",
-            transition: isAnimating ? "right 0.5s linear" : "none", // Smooth bowling animation
-            opacity: (isAnimating || gameOver) ? 1 : 0 // Hide ball when not bowling
+            left: ballLeft,
+            top: ballTop,
+            width: "12px", height: "12px",
+            backgroundColor: "white", borderRadius: "50%",
+            boxShadow: "0 0 4px rgba(0,0,0,0.5)",
+            transform: `scale(${ballScale})`,
+            transition: animState === "IDLE" ? "none" : "all 0.4s ease-out",
+            opacity: ballOpacity, zIndex: 5
           }} />
         </div>
       </div>
@@ -216,16 +279,13 @@ function App() {
       {/* Visual Power Bar [cite: 40, 43] */}
       <div style={{ margin: "30px 0", textAlign: "center" }}>
         <h3>Power Bar</h3>
-        
         <div style={{ 
           position: "relative", width: "100%", height: "40px", display: "flex", 
           border: "3px solid #333", borderRadius: "5px", overflow: "hidden", backgroundColor: "#eee"
         }}>
-          {/* Mapped Segments [cite: 44] */}
           {PROBABILITIES[style].map((segment, index) => (
             <div key={index} style={{
-              width: `${segment.prob * 100}%`,
-              backgroundColor: segment.color,
+              width: `${segment.prob * 100}%`, backgroundColor: segment.color,
               display: "flex", alignItems: "center", justifyContent: "center",
               color: "white", fontWeight: "bold", fontSize: "14px", textShadow: "1px 1px 2px black"
             }}>
@@ -249,14 +309,14 @@ function App() {
       <div className="controls" style={{ display: "flex", justifyContent: "center", gap: "10px", flexWrap: "wrap" }}>
         <button 
           onClick={() => setStyle("Aggressive")} 
-          disabled={gameOver || isAnimating}
+          disabled={gameOver || animState !== "IDLE"}
           style={{ padding: "10px 20px", backgroundColor: style === "Aggressive" ? "#ff4d4d" : "#ccc", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold" }}
         >
           Aggressive [cite: 36]
         </button>
         <button 
           onClick={() => setStyle("Defensive")} 
-          disabled={gameOver || isAnimating}
+          disabled={gameOver || animState !== "IDLE"}
           style={{ padding: "10px 20px", backgroundColor: style === "Defensive" ? "#4d79ff" : "#ccc", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold" }}
         >
           Defensive [cite: 36]
@@ -264,7 +324,7 @@ function App() {
         <button 
           ref={playButtonRef} 
           onClick={playShot} 
-          disabled={gameOver || isAnimating} 
+          disabled={gameOver || animState !== "IDLE"} 
           style={{ padding: "10px 20px", backgroundColor: "#4CAF50", color: "white", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold" }}
         >
           Play Shot (Spacebar)
@@ -276,6 +336,15 @@ function App() {
           Restart
         </button>
       </div>
+
+      {/* Optional CSS block for keyframe animations (can be put in a regular CSS file) */}
+      <style>{`
+        @keyframes popIn {
+          0% { transform: scale(0.5); opacity: 0; }
+          80% { transform: scale(1.1); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
