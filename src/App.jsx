@@ -42,7 +42,8 @@ function App() {
 
   // Moving Slider Logic [cite: 45]
   useEffect(() => {
-    if (gameOver) return;
+    // PAUSE CONDITION: Stop the slider if the game is over or an animation is playing
+    if (gameOver || animState !== "IDLE") return;
 
     const interval = setInterval(() => {
       setSliderPos((prev) => {
@@ -59,7 +60,7 @@ function App() {
     }, 50); 
 
     return () => clearInterval(interval);
-  }, [gameOver]);
+  }, [gameOver, animState]); // Ensure animState is in the dependency array
 
   // Spacebar Event Listener
   useEffect(() => {
@@ -94,7 +95,7 @@ function App() {
     }
 
     setCurrentOutcome(result);
-    setAnimState("BOWLING");
+    setAnimState("BOWLING"); // This state change instantly pauses the slider
 
     // Phase 1: Ball reaches batsman
     setTimeout(() => {
@@ -108,7 +109,7 @@ function App() {
         // Phase 3: Reset for next ball
         setTimeout(() => {
           setBigText("");
-          setAnimState("IDLE");
+          setAnimState("IDLE"); // This resumes the slider
           setCurrentOutcome(null);
         }, 1500);
 
@@ -139,7 +140,6 @@ function App() {
       setRuns(newRuns);
     }
 
-    // Game Progression Logic [cite: 51, 52, 53]
     if (newBalls >= 12 || newWickets >= 2) {
       setGameOver(true);
       setLastAction(`Game Over! Final Score: ${newRuns}/${newWickets}`);
@@ -148,7 +148,6 @@ function App() {
     }
   };
 
-  // Restart Option [cite: 54]
   const handleRestart = () => {
     setRuns(0);             
     setWickets(0);          
@@ -168,15 +167,15 @@ function App() {
   let ballOpacity = gameOver ? 0 : 1;
 
   if (animState === "BOWLING") {
-    ballLeft = "15%"; // Travels to batsman
+    ballLeft = "15%"; 
   } else if (animState === "HITTING") {
     switch(currentOutcome) {
       case "0": ballLeft = "15%"; ballTop = "40px"; break;
       case "1": ballLeft = "30%"; ballTop = "50px"; break;
       case "2": ballLeft = "60%"; ballTop = "5px"; break; 
-      case "3": ballLeft = "70%"; ballTop = "60px"; break; 
-      case "4": ballLeft = "100%"; ballTop = "40px"; break; 
-      case "6": ballLeft = "100%"; ballTop = "-10px"; ballScale = 2; break; 
+      case "3": ballLeft = "100%"; ballTop = "60px"; break; 
+      case "4": ballLeft = "150%"; ballTop = "40px"; break; 
+      case "6": ballLeft = "150%"; ballTop = "-10px"; ballScale = 2; break; 
       case "Wicket": ballLeft = "8%"; ballTop = "30px"; break; 
       default: break;
     }
@@ -293,14 +292,14 @@ function App() {
           disabled={gameOver || animState !== "IDLE"}
           style={{ padding: "10px 20px", backgroundColor: style === "Aggressive" ? "#ff4d4d" : "#ccc", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold" }}
         >
-          Aggressive [cite: 36]
+          Aggressive 
         </button>
         <button 
           onClick={() => setStyle("Defensive")} 
           disabled={gameOver || animState !== "IDLE"}
           style={{ padding: "10px 20px", backgroundColor: style === "Defensive" ? "#4d79ff" : "#ccc", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold" }}
         >
-          Defensive [cite: 36]
+          Defensive
         </button>
         <button 
           ref={playButtonRef} 
