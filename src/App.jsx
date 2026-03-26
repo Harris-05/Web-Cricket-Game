@@ -162,7 +162,6 @@ function App() {
     setBigText("");
   };
 
-  // Dynamic Ball CSS based on animation state
   let ballLeft = "85%";
   let ballTop = "30px";
   let ballScale = 1;
@@ -172,33 +171,28 @@ function App() {
     ballLeft = "15%"; // Travels to batsman
   } else if (animState === "HITTING") {
     switch(currentOutcome) {
-      case "0": ballLeft = "20%"; ballTop = "40px"; break;
+      case "0": ballLeft = "15%"; ballTop = "40px"; break;
       case "1": ballLeft = "30%"; ballTop = "50px"; break;
-      case "2": ballLeft = "50%"; ballTop = "5px"; break; // Top middle
-      case "3": ballLeft = "50%"; ballTop = "60px"; break; // Bottom middle
-      case "4": ballLeft = "95%"; ballTop = "40px"; break; // Grounded to boundary
-      case "6": ballLeft = "95%"; ballTop = "-10px"; ballScale = 2; break; // Flying high
-      case "Wicket": ballLeft = "8%"; ballTop = "30px"; break; // Goes past bat into wickets
+      case "2": ballLeft = "60%"; ballTop = "5px"; break; 
+      case "3": ballLeft = "70%"; ballTop = "60px"; break; 
+      case "4": ballLeft = "100%"; ballTop = "40px"; break; 
+      case "6": ballLeft = "100%"; ballTop = "-10px"; ballScale = 2; break; 
+      case "Wicket": ballLeft = "8%"; ballTop = "30px"; break; 
       default: break;
     }
   }
-
-  // Wicket falling logic
   const wicketsFallen = animState === "HITTING" && currentOutcome === "Wicket";
 
   return (
     <div className="container" style={{ fontFamily: "sans-serif", padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
       <h1 style={{ textAlign: "center" }}>🏏 2D Cricket Game</h1>
       
-      {/* Scoreboard [cite: 33, 34, 35] */}
       <div className="scoreboard" style={{ display: "flex", justifyContent: "space-around", backgroundColor: "#333", color: "white", padding: "15px", borderRadius: "8px", marginBottom: "20px" }}>
         <p><strong>Runs:</strong> {runs}</p>
         <p><strong>Wickets:</strong> {wickets}</p>
         <p><strong>Overs:</strong> {Math.floor(balls / 6)}.{balls % 6} (Max: 2.0)</p>
         <p><strong>Style:</strong> {style}</p>
       </div>
-
-      {/* 2D Cricket Ground Layout */}
       <div style={{ 
         width: "100%", 
         height: "250px", 
@@ -212,7 +206,6 @@ function App() {
         overflow: "hidden"
       }}>
         
-        {/* BIG TEXT OVERLAY */}
         {bigText && (
           <div style={{
             position: "absolute", zIndex: 20,
@@ -225,16 +218,13 @@ function App() {
           </div>
         )}
 
-        {/* Pitch Area */}
         <div style={{
           width: "70%", height: "80px", backgroundColor: "#d2b48c", 
           border: "2px solid #8b4513", position: "relative"
         }}>
-          {/* Crease lines */}
           <div style={{ position: "absolute", left: "15%", top: "0", bottom: "0", borderLeft: "2px solid white" }} />
           <div style={{ position: "absolute", right: "15%", top: "0", bottom: "0", borderRight: "2px solid white" }} />
 
-          {/* Wickets */}
           <div style={{
             position: "absolute", left: "10%", top: "25px", height: "30px", width: "10px",
             display: "flex", justifyContent: "space-between",
@@ -247,7 +237,6 @@ function App() {
             <div style={{ width: "2px", height: "100%", backgroundColor: "white" }}></div>
           </div>
 
-          {/* Batsman & Bat */}
           <div style={{ 
             position: "absolute", left: "11%", top: "15px", fontSize: "35px",
             transform: (animState === "HITTING" && currentOutcome !== "Wicket") ? "rotate(-60deg) translateX(-10px)" : "rotate(0deg)",
@@ -256,12 +245,9 @@ function App() {
             🏏
           </div>
 
-          {/* Bowler */}
           <div style={{ position: "absolute", right: "5%", top: "20px", fontSize: "30px" }}>
             🧍‍♂️
           </div>
-
-          {/* Ball */}
           <div style={{
             position: "absolute",
             left: ballLeft,
@@ -275,8 +261,6 @@ function App() {
           }} />
         </div>
       </div>
-
-      {/* Visual Power Bar [cite: 40, 43] */}
       <div style={{ margin: "30px 0", textAlign: "center" }}>
         <h3>Power Bar</h3>
         <div style={{ 
@@ -292,8 +276,6 @@ function App() {
               {segment.prob > 0 ? segment.outcome : ""}
             </div>
           ))}
-
-          {/* Moving Slider overlay [cite: 45] */}
           <div style={{
             position: "absolute", top: "-5px", bottom: "-5px",
             left: `${sliderPos * 100}%`, width: "6px", backgroundColor: "black",
@@ -305,7 +287,6 @@ function App() {
         <h2 style={{ marginTop: "20px", color: resultColor(lastAction) }}>{lastAction}</h2>
       </div>
 
-      {/* Controls */}
       <div className="controls" style={{ display: "flex", justifyContent: "center", gap: "10px", flexWrap: "wrap" }}>
         <button 
           onClick={() => setStyle("Aggressive")} 
@@ -336,8 +317,6 @@ function App() {
           Restart
         </button>
       </div>
-
-      {/* Optional CSS block for keyframe animations (can be put in a regular CSS file) */}
       <style>{`
         @keyframes popIn {
           0% { transform: scale(0.5); opacity: 0; }
@@ -349,7 +328,6 @@ function App() {
   );
 }
 
-// Helper function to color the outcome text
 function resultColor(actionText) {
   if (actionText.includes("Wicket")) return "red";
   if (actionText.includes("4") || actionText.includes("6")) return "green";
